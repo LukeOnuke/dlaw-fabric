@@ -1,0 +1,97 @@
+package com.lukeonuke.dlawfabric.module.discord.eventlisteners;
+
+import com.lukeonuke.dlawfabric.DlawFabric;
+import com.lukeonuke.dlawfabric.module.discord.*;
+import com.lukeonuke.dlawfabric.service.config.ConfigurationService;
+import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.hooks.EventListener;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
+import org.jetbrains.annotations.NotNull;
+
+import java.awt.*;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@RequiredArgsConstructor
+public class CommandListener extends ListenerAdapter implements EventListener {
+
+    private final Map<String, SlashCommand> commands = new HashMap<>();
+    private final DlawFabric mod;
+    private Guild guild;
+
+    @Override
+    public void onReady(@NotNull ReadyEvent event) {
+        final ConfigurationService cs = ConfigurationService.getInstance();
+        // Retrieve guild id
+        String id = cs.getDiscordGuildID();
+        if (id == null) {
+            throw new RuntimeException("Discord guild not set");
+        }
+
+        // Retrieve guild
+        guild = event.getJDA().getGuildById(id);
+        if (guild == null) {
+            throw new RuntimeException("Bot is not a member of the main guild");
+        }
+
+        // Adding commands
+        registerCommand(new StatusCommand());
+        registerCommand(new SeedCommand());
+        registerCommand(new IpCommand());
+        registerCommand(new RconCommand());
+        registerCommand(new LookupCommand());
+
+        // Adding authenticated commands
+        if (cs.getAuthenticationEnabled()) {
+            registerCommand(new VerifyCommand());
+            registerCommand(new UnverifyCommand());
+        }
+    }
+
+    @Override
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        final ConfigurationService cs = ConfigurationService.getInstance();
+        try {
+            String name = event.getName();
+            if (commands.containsKey(name)) {
+                event.deferReply().queue();
+
+                SlashCommand command = commands.get(name);
+                if (command.isAdminOnly()) {
+                    Member member = event.getMember();
+                    String role = cs.getDiscordStaffRoleID();
+                    if (member != null && member.getRoles().stream().anyMatch(r -> r.getId().equals(role))) {
+                        command.execute(event, mod);
+                        return;
+                    }
+
+                    // Not admin
+                    throw new RuntimeException("You don't have the permission to use this command");
+                }
+                // Regular command
+                command.execute(event, mod);
+            }
+        } catch (Exception e) {
+            event.getHook().sendMessageEmbeds(new EmbedBuilder()
+                    .setColor(Color.RED)
+                    .setTitle(MarkdownUtil.bold("Oh, something went wrong!"))
+                    .setDescription(e.getMessage())
+                    .setTimestamp(Instant.now())
+                    .build()).queue();
+        }
+    }
+
+    public void registerCommand(SlashCommand command) {
+        DlawFabric.LOGGER.info("Registering command " + command.getClass().getSimpleName());
+        commands.put(command.getCommandData().getName(), command);
+        guild.upsertCommand(command.getCommandData()).queue();
+    }
+}
+

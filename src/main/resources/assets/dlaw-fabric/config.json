@@ -1,0 +1,14 @@
+{
+  "respectGlobalBans": true,
+  "discordStaffRoleID": "1088936906370326611",
+  "discordGuildID": "1088934690385317928",
+  "discordCommandColor": 16731393,
+  "discordSystemColor": 65535,
+  "discordChatChannelID": "1090021511848525856",
+  "discordToken": "token",
+  "discordLinkedRoleID": "1221230313271853086",
+  "authenticationEnabled": true,
+  "authUser": "",
+  "authToken": "",
+  "minecraftServerAddress": ""
+}
