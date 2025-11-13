@@ -25,9 +25,17 @@ public class PlayerManagerMixin {
             cancellable = true
     )
     private void dlaw_checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir){
-        TimeoutService ts = TimeoutService.getInstance();
-        UUID playerUUID = profile.getId();
+        final TimeoutService ts = TimeoutService.getInstance();
+        final UUID playerUUID = profile.getId();
+
+        // Timeout/Cooldown management
+        if (!ts.isTimeoutOver(playerUUID)) {
+            cir.setReturnValue(Text.literal("Wait " + ts.getTimeout(playerUUID) + " more second(s) before reconnecting.").formatted(Formatting.GREEN));
+            return;
+        }
+
         try {
+            final DlawFabric mod = DlawFabric.getMod();
             DiscordModel discord = PluginUtils.authentificatePlayer(mod, playerUUID.toString());
             mod.getPlayers().put(playerUUID, discord);
             DlawFabric.LOGGER.info(String.format("%s authenticated as: %s [ID: %s]",

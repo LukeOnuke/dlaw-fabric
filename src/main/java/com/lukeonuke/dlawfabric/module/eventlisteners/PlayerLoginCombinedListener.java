@@ -33,29 +33,6 @@ public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.I
     @Override
     public void onPlayInit(ServerPlayNetworkHandler handler, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
-        GameProfile gameProfile = player.getGameProfile();
-        PlayerManager playerManager = server.getPlayerManager();
-        UUID playerUUID = player.getUuid();
-        final TimeoutService ts = TimeoutService.getInstance();
-
-        // Timeout/Cooldown management
-        if (!ts.isTimeoutOver(playerUUID)) {
-            handler.disconnect(Text.literal("Wait " + ts.getTimeout(playerUUID) + " more second(s) before reconnecting.").formatted(Formatting.GREEN));
-            return;
-        }
-
-        // Check if whitelist will allow player, and if not: skip.
-        if (server.isEnforceWhitelist() && !playerManager.isWhitelisted(gameProfile)) {
-            ts.addTimeout(playerUUID, TimeoutService.TIMEOUT_BANNED);
-            handler.disconnect(Text.of("You are not whitelisted."));
-            return;
-        }
-        // Check if player is banned, and if yes: skip.
-        if (playerManager.getUserBanList().contains(gameProfile) || playerManager.getIpBanList().isBanned(player.getIp())) {
-            ts.addTimeout(playerUUID, TimeoutService.TIMEOUT_BANNED);
-            handler.disconnect(Text.literal("You have been banned.").formatted(Formatting.RED));
-            return;
-        }
 
         /*
         * SECTION : DISCORD MANAGEMENT AND NOTIFICATION

@@ -5,7 +5,6 @@ import com.lukeonuke.dlawfabric.module.discord.eventlisteners.ChatListener;
 import com.lukeonuke.dlawfabric.module.discord.eventlisteners.CommandListener;
 import com.lukeonuke.dlawfabric.module.eventlisteners.ChatMessageListener;
 import com.lukeonuke.dlawfabric.module.eventlisteners.PlayerLoginCombinedListener;
-import com.lukeonuke.dlawfabric.module.eventlisteners.PlayerJoinLeaveListener;
 import com.lukeonuke.dlawfabric.module.eventlisteners.ServerLifecycleEventsListener;
 import com.lukeonuke.dlawfabric.service.PluginUtils;
 import com.lukeonuke.dlawfabric.service.RestService;
@@ -25,7 +24,6 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerLoginConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -54,6 +52,9 @@ public class DlawFabric implements ModInitializer {
 
 	private final Map<UUID, DiscordModel> players = new HashMap<>();
 
+	@Getter
+	private static DlawFabric mod = null;
+
 	@Override
 	public void onInitialize() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
@@ -62,14 +63,13 @@ public class DlawFabric implements ModInitializer {
 		long startTime = System.nanoTime();
 		LOGGER.info("Initialising dlaw-fabric...");
 
+		LOGGER.info("	Setting mod instance");
+		mod = this;
+		LOGGER.info("   Set!");
+
 		LOGGER.info("   Reading config...");
 		final ConfigurationService cs = ConfigurationService.getInstance();
 		LOGGER.info("   Read config!");
-
-		LOGGER.info("	Initializing discord commands...");
-//		commandModule = new CommandListener(this);
-//		chatMessageListener = new ChatMessageListener(this);
-		LOGGER.info("   Initialized discord commands!");
 
 		LOGGER.info("   Establishing JDA connection...");
 		jda = JDABuilder.createDefault(cs.getDiscordToken())
@@ -100,9 +100,6 @@ public class DlawFabric implements ModInitializer {
 		PlayerLoginCombinedListener plcl = new PlayerLoginCombinedListener(this);
 		ServerPlayConnectionEvents.INIT.register(plcl);
 		ServerPlayConnectionEvents.DISCONNECT.register(plcl);
-		PlayerJoinLeaveListener pjll = new PlayerJoinLeaveListener(this);
-		ServerPlayConnectionEvents.JOIN.register(pjll);
-		ServerPlayConnectionEvents.DISCONNECT.register(pjll);
 		ServerMessageEvents.CHAT_MESSAGE.register(new ChatMessageListener(this));
 		ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
 
