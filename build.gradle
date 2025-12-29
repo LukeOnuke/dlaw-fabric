@@ -65,6 +65,14 @@ shadowJar {
 	configurations = [project.configurations.shadedImplementation]
 	archiveClassifier.set("dev-shadow") // temporary classifier before remap
 
+	// Relocate the entire kotlinx.datetime package
+	relocate 'kotlinx.datetime', 'com.lukeonuke.dlawfabric.libs.kotlinx.datetime'
+
+	// 3. (Optional but Recommended) Exclude Kotlin metadata
+	// This prevents "module-info" or metadata conflicts with other mods
+	exclude 'META-INF/kotlin-datetime.kotlin_module'
+	exclude 'META-INF/versions/**'
+
 	mergeServiceFiles()
 }
 
