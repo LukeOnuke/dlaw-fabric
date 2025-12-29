@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.dv8tion.jda.internal.interactions.CommandDataImpl;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.permission.PermissionPredicate;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 
@@ -43,8 +44,8 @@ public class RconCommand implements SlashCommand {
         MinecraftServer server = mod.getMinecraftServer();
 
         if (server == null) throw new RuntimeException("Server has not finished starting yet!");
-        ServerCommandSource commandSource = mod.getMinecraftServer().getCommandSource().withLevel(4);
-        server.getCommandManager().executeWithPrefix(commandSource, option.getAsString());
+        ServerCommandSource commandSource = mod.getMinecraftServer().getCommandSource().withPermissions(PermissionPredicate.ALL);
+        server.getCommandManager().parseAndExecute(commandSource, option.getAsString());
 
         event.getHook().sendMessageEmbeds(new EmbedBuilder()
                 .setColor(Color.GREEN)

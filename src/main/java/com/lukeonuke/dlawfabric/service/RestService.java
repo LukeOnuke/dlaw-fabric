@@ -15,6 +15,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.Person;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.world.ServerWorld;
 import spark.Spark;
@@ -83,17 +84,17 @@ public class RestService implements Runnable {
         Spark.get("/api/players/:uuid", (request, response) -> {
             try {
                 UUID uuid = parseUUID(request.params("uuid"));
-                if(server.getUserCache() == null) return generateError("Game server user cache unavailable!");
-                Optional<GameProfile> user = server.getUserCache().getByUuid(uuid);
+                if(server.getApiServices().nameToIdCache() == null) return generateError("Game server user cache unavailable!");
+                Optional<PlayerConfigEntry> user = server.getApiServices().nameToIdCache().getByUuid(uuid);
                 if (user.isEmpty()) {
                     response.status(404);
                     return generateError("Player not found");
                 }
-                GameProfile player = user.get();
+                PlayerConfigEntry player = user.get();
 
                 PlayerData p = PlayerData.builder()
-                        .id(player.getId().toString())
-                        .name(player.getName())
+                        .id(player.id().toString())
+                        .name(player.name())
                         .build();
                 return mapper.writeValueAsString(p);
 

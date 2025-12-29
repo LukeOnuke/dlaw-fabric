@@ -5,6 +5,7 @@ import com.lukeonuke.dlawfabric.model.DiscordModel;
 import com.lukeonuke.dlawfabric.service.PluginUtils;
 import com.lukeonuke.dlawfabric.service.TimeoutService;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -20,13 +21,13 @@ import java.util.UUID;
 @Mixin(PlayerManager.class)
 public class PlayerManagerMixin {
     @Inject(
-            method = "checkCanJoin(Ljava/net/SocketAddress;Lcom/mojang/authlib/GameProfile;)Lnet/minecraft/text/Text;",
+            method = "checkCanJoin(Ljava/net/SocketAddress;Lnet/minecraft/server/PlayerConfigEntry;)Lnet/minecraft/text/Text;",
             at = @At("HEAD"),
             cancellable = true
     )
-    private void dlaw_checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir){
+    private void dlaw_checkCanJoin(SocketAddress address, PlayerConfigEntry configEntry, CallbackInfoReturnable<Text> cir){
         final TimeoutService ts = TimeoutService.getInstance();
-        final UUID playerUUID = profile.getId();
+        final UUID playerUUID = configEntry.id();
 
         // Timeout/Cooldown management
         if (!ts.isTimeoutOver(playerUUID)) {
@@ -39,7 +40,7 @@ public class PlayerManagerMixin {
             DiscordModel discord = PluginUtils.authentificatePlayer(mod, playerUUID.toString());
             mod.getPlayers().put(playerUUID, discord);
             DlawFabric.LOGGER.info(String.format("%s authenticated as: %s [ID: %s]",
-                    profile.getName(),
+                    configEntry.name(),
                     discord.getNickname(),
                     discord.getId()
             ));

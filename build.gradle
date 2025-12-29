@@ -57,6 +57,9 @@ dependencies {
 	implementation("net.dv8tion:JDA:$project.jda_version")
 
 	implementation("com.sparkjava:spark-core:2.9.4")
+
+	// https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-xml
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
 	// https://mvnrepository.com/artifact/org.apache.spark/spark-core
 	//include(modImplementation('me.lucko:fabric-permissions-api:0.4.0'))
 }

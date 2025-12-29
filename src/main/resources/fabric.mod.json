@@ -17,9 +17,6 @@
 	"entrypoints": {
 		"main": [
           "com.lukeonuke.dlawfabric.DlawFabric"
-		],
-		"client": [
-			"com.lukeonuke.dlawfabric.DlawfabricClient"
 		]
 	},
 	"mixins": [
