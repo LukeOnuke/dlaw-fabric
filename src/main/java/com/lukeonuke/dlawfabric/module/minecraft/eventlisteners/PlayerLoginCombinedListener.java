@@ -1,11 +1,9 @@
-package com.lukeonuke.dlawfabric.module.eventlisteners;
+package com.lukeonuke.dlawfabric.module.minecraft.eventlisteners;
 
 import com.lukeonuke.dlawfabric.DlawFabric;
-import com.lukeonuke.dlawfabric.model.DiscordModel;
 import com.lukeonuke.dlawfabric.service.PluginUtils;
 import com.lukeonuke.dlawfabric.service.TimeoutService;
 import com.lukeonuke.dlawfabric.service.config.ConfigurationService;
-import com.mojang.authlib.GameProfile;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
@@ -13,14 +11,12 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import javax.security.auth.login.LoginException;
 import java.util.UUID;
 
 public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.Init, ServerPlayConnectionEvents.Disconnect {

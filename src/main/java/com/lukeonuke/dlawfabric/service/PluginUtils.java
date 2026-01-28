@@ -11,6 +11,9 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import javax.security.auth.login.LoginException;
 import java.io.IOException;
@@ -125,9 +128,14 @@ public class PluginUtils {
         try{
             final ConfigurationService cs = ConfigurationService.getInstance();
             final DataService ds = DataService.getInstance();
-            final DataModel model = ds.getData(HelperService.cleanUUID(uuid));
 
-            DlawFabric.LOGGER.info("{}", model);
+            final CacheService cacheService = CacheService.getInstance();
+            if(cacheService.contains(uuid)){
+                DlawFabric.LOGGER.info("Player found in cache and let through");
+                return cacheService.get(uuid);
+            }
+
+            final DataModel model = ds.getData(HelperService.cleanUUID(uuid));
 
             if(cs.getRespectGlobalBans()){
                 try {
@@ -160,12 +168,14 @@ public class PluginUtils {
                     "dlaw-auth-linked-role-assigner");
             worker.start();
 
-            return DiscordModel.builder()
+            final DiscordModel discordModel = DiscordModel.builder()
                     .id(member.getId())
                     .name(MarkdownSanitizer.sanitize(member.getUser().getEffectiveName()))
                     .nickname(MarkdownSanitizer.sanitize(member.getEffectiveName()))
                     .avatar(member.getEffectiveAvatarUrl())
                     .build();
+            cacheService.put(uuid, discordModel);
+            return discordModel;
         } catch (IOException | InterruptedException e) {
             throw new LoginException("DLAW backend unreachable. Contact server administrator.");
         }
@@ -177,5 +187,35 @@ public class PluginUtils {
 
     public static String escapeMarkdown(String s) {
         return MarkdownSanitizer.escape(s, true); // escape single tokens too
+    }
+
+    /**
+     * Truncates a string and adds "..." at the end whilst still respecting
+     * the length.
+     * @param s String to truncate.
+     * @param desiredLength Desired length, will never exceed the length;
+     * @return Truncated string.
+     */
+    public static String truncateString(String s, int desiredLength){
+        final int actualLength = s.length();
+        if(desiredLength > s.length()) return s;
+        return s.substring(0, Math.min(s.length(), desiredLength - 3)) + "...";
+    }
+
+    /**
+     * Prepends the mod's command prefix to text for a better response.
+     * @param text
+     * @return
+     */
+    public static MutableText prependPrefix(Text text){
+        return Text.empty().append(Text.literal("DLAW >> ").formatted(Formatting.BOLD, Formatting.DARK_PURPLE)).append(text);
+    }
+
+    public static MutableText formatError(String string){
+        return Text.literal(string).formatted(Formatting.RED);
+    }
+
+    public static MutableText formatFullErrorMessage(String message){
+        return prependPrefix(formatError(message));
     }
 }

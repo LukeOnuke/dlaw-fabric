@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.security.auth.login.LoginException;
 import java.net.SocketAddress;
+import java.time.Instant;
 import java.util.UUID;
 
 @Mixin(PlayerManager.class)
@@ -28,6 +29,7 @@ public class PlayerManagerMixin {
     private void dlaw_checkCanJoin(SocketAddress address, PlayerConfigEntry configEntry, CallbackInfoReturnable<Text> cir){
         final TimeoutService ts = TimeoutService.getInstance();
         final UUID playerUUID = configEntry.id();
+        final long timestamp = System.currentTimeMillis();
 
         // Timeout/Cooldown management
         if (!ts.isTimeoutOver(playerUUID)) {
@@ -39,10 +41,11 @@ public class PlayerManagerMixin {
             final DlawFabric mod = DlawFabric.getMod();
             DiscordModel discord = PluginUtils.authentificatePlayer(mod, playerUUID.toString());
             mod.getPlayers().put(playerUUID, discord);
-            DlawFabric.LOGGER.info(String.format("%s authenticated as: %s [ID: %s]",
+            DlawFabric.LOGGER.info(String.format("%s authenticated as: %s [ID: %s] in %sms",
                     configEntry.name(),
                     discord.getNickname(),
-                    discord.getId()
+                    discord.getId(),
+                    System.currentTimeMillis() - timestamp
             ));
         } catch (LoginException e) {
             String message = e.getMessage();

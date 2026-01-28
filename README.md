@@ -1,12 +1,9 @@
 # dlaw-fabric
-Feature complete port of the DLAW plugin to fabric. DLAW api fully implemented
-too.
 
-Using super-link as backend.
+Fully feature complete discord link for fabric servers, includes
+- Discord/Minecraft user linking
+- Complete chat integration
+- Ban sync with discord server
+- `/mute` and `/ignore` commands
 
-Documentation comming soon...
-
-# todo:
--[ ] clean up code a bit more
--[ ] write docs
--[ ] publish on modrinth
+Contact @pequla for api key.

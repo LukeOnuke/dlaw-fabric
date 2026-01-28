@@ -1,4 +1,4 @@
-package com.lukeonuke.dlawfabric.module.eventlisteners;
+package com.lukeonuke.dlawfabric.module.minecraft.eventlisteners;
 
 import com.lukeonuke.dlawfabric.DlawFabric;
 import lombok.AllArgsConstructor;
