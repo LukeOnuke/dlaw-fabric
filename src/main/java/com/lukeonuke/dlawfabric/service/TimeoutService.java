@@ -1,10 +1,8 @@
 package com.lukeonuke.dlawfabric.service;
 
 import lombok.Getter;
-import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 

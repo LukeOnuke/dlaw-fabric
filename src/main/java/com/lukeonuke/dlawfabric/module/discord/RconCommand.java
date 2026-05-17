@@ -2,7 +2,6 @@ package com.lukeonuke.dlawfabric.module.discord;
 
 import com.lukeonuke.dlawfabric.DlawFabric;
 import com.lukeonuke.dlawfabric.service.config.ConfigurationService;
-import com.mojang.brigadier.ParseResults;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -12,13 +11,11 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.dv8tion.jda.internal.interactions.CommandDataImpl;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.permission.PermissionPredicate;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.permissions.PermissionSet;
 
-import java.awt.*;
-import java.util.logging.Logger;
+import java.awt.Color;
 
 public class RconCommand implements SlashCommand {
 
@@ -44,8 +41,10 @@ public class RconCommand implements SlashCommand {
         MinecraftServer server = mod.getMinecraftServer();
 
         if (server == null) throw new RuntimeException("Server has not finished starting yet!");
-        ServerCommandSource commandSource = mod.getMinecraftServer().getCommandSource().withPermissions(PermissionPredicate.ALL);
-        server.getCommandManager().parseAndExecute(commandSource, option.getAsString());
+
+        // Elevate the source to max OP level (4) and execute natively
+        CommandSourceStack commandSource = server.createCommandSourceStack().withPermission(PermissionSet.ALL_PERMISSIONS);
+        server.getCommands().performPrefixedCommand(commandSource, option.getAsString());
 
         event.getHook().sendMessageEmbeds(new EmbedBuilder()
                 .setColor(Color.GREEN)

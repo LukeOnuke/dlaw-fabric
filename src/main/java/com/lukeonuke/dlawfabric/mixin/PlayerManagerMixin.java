@@ -5,10 +5,10 @@ import com.lukeonuke.dlawfabric.model.DiscordModel;
 import com.lukeonuke.dlawfabric.service.PluginUtils;
 import com.lukeonuke.dlawfabric.service.TimeoutService;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.server.PlayerConfigEntry;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.players.NameAndId;
+import net.minecraft.server.players.PlayerList;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,24 +16,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.security.auth.login.LoginException;
 import java.net.SocketAddress;
-import java.time.Instant;
 import java.util.UUID;
 
-@Mixin(PlayerManager.class)
+@Mixin(PlayerList.class)
 public class PlayerManagerMixin {
     @Inject(
-            method = "checkCanJoin(Ljava/net/SocketAddress;Lnet/minecraft/server/PlayerConfigEntry;)Lnet/minecraft/text/Text;",
+            method = "canPlayerLogin(Ljava/net/SocketAddress;Lnet/minecraft/server/players/NameAndId;)Lnet/minecraft/network/chat/Component;",
             at = @At("HEAD"),
             cancellable = true
     )
-    private void dlaw_checkCanJoin(SocketAddress address, PlayerConfigEntry configEntry, CallbackInfoReturnable<Text> cir){
+    private void dlaw_checkCanJoin(SocketAddress address, NameAndId gameProfile, CallbackInfoReturnable<Component> cir){
         final TimeoutService ts = TimeoutService.getInstance();
-        final UUID playerUUID = configEntry.id();
+        final UUID playerUUID = gameProfile.id();
         final long timestamp = System.currentTimeMillis();
 
         // Timeout/Cooldown management
         if (!ts.isTimeoutOver(playerUUID)) {
-            cir.setReturnValue(Text.literal("Wait " + ts.getTimeout(playerUUID) + " more second(s) before reconnecting.").formatted(Formatting.GREEN));
+            cir.setReturnValue(Component.literal("Wait " + ts.getTimeout(playerUUID) + " more second(s) before reconnecting.").withStyle(ChatFormatting.GREEN));
             return;
         }
 
@@ -42,14 +41,14 @@ public class PlayerManagerMixin {
             DiscordModel discord = PluginUtils.authentificatePlayer(mod, playerUUID.toString());
             mod.getPlayers().put(playerUUID, discord);
             DlawFabric.LOGGER.info(String.format("%s authenticated as: %s [ID: %s] in %sms",
-                    configEntry.name(),
+                    gameProfile.name(),
                     discord.getNickname(),
                     discord.getId(),
                     System.currentTimeMillis() - timestamp
             ));
         } catch (LoginException e) {
             String message = e.getMessage();
-            cir.setReturnValue(Text.literal(message).formatted(Formatting.RED));
+            cir.setReturnValue(Component.literal(message).withStyle(ChatFormatting.RED));
             ts.addTimeout(playerUUID, TimeoutService.TIMEOUT_CLASSIC);
         }
     }

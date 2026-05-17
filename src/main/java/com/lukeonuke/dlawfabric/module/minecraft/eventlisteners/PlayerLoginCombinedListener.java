@@ -11,11 +11,11 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.stat.Stats;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stats;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import java.util.UUID;
 
@@ -27,22 +27,22 @@ public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.I
     }
 
     @Override
-    public void onPlayInit(ServerPlayNetworkHandler handler, MinecraftServer server) {
-        ServerPlayerEntity player = handler.getPlayer();
+    public void onPlayInit(ServerGamePacketListenerImpl handler, MinecraftServer server) {
+        ServerPlayer player = handler.player;
 
         /*
-        * SECTION : DISCORD MANAGEMENT AND NOTIFICATION
-        * =============================================
-        * */
-        final Text vanillaMessage = Text.translatable("multiplayer.player.joined", handler.getPlayer().getDisplayName());
-        final int playTime = player.getStatHandler().getStat(Stats.CUSTOM.getOrCreateStat(Stats.PLAY_TIME));
+         * SECTION : DISCORD MANAGEMENT AND NOTIFICATION
+         * =============================================
+         * */
+        final Component vanillaMessage = Component.translatable("multiplayer.player.joined", player.getDisplayName());
+        final int playTime = player.getStats().getValue(Stats.CUSTOM.get(Stats.PLAY_TIME));
 
         new Thread(() -> {
             final ConfigurationService cs = ConfigurationService.getInstance();
 
             sendMessage(player, cs.getDiscordJoinColor(), vanillaMessage.getString(), getOnline() + 1, false);
             if (playTime == 0) {
-                server.getPlayerManager().broadcast(Text.of(Formatting.DARK_PURPLE + "Welcome " + player.getDisplayName().getString() + " to " + cs.getServerName() + Formatting.RESET + "!"), false);
+                server.getPlayerList().broadcastSystemMessage(Component.literal(ChatFormatting.DARK_PURPLE + "Welcome " + player.getDisplayName().getString() + " to " + cs.getServerName() + ChatFormatting.RESET + "!"), false);
                 mod.sendPlayerEmbed(player, cs.getDiscordJoinColor(), new EmbedBuilder().setDescription("It's " + PluginUtils.escapeMarkdown(player.getDisplayName().getString()) + " first time on the server!"));
             }
 
@@ -52,7 +52,7 @@ public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.I
             if (guild == null) return;
 
             Member member = guild.retrieveMemberById(
-                    mod.getPlayers().get(handler.getPlayer().getUuid()).getId()
+                    mod.getPlayers().get(player.getUUID()).getId()
             ).complete();
 
             if (playTimeHours > 2) {
@@ -68,9 +68,9 @@ public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.I
     }
 
     @Override
-    public void onPlayDisconnect(ServerPlayNetworkHandler handler, MinecraftServer minecraftServer) {
-        final ServerPlayerEntity player = handler.getPlayer();
-        final UUID uuid = player.getUuid();
+    public void onPlayDisconnect(ServerGamePacketListenerImpl handler, MinecraftServer minecraftServer) {
+        final ServerPlayer player = handler.player;
+        final UUID uuid = player.getUUID();
         final TimeoutService ts = TimeoutService.getInstance();
         if(ts.isTimeoutOver(uuid)) ts.addTimeout(uuid, 5);
 
@@ -78,13 +78,13 @@ public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.I
          * SECTION : DISCORD MANAGEMENT AND NOTIFICATION
          * =============================================
          * */
-        Text vanillaMessage = Text.translatable("multiplayer.player.left", handler.getPlayer().getDisplayName());
+        Component vanillaMessage = Component.translatable("multiplayer.player.left", player.getDisplayName());
         final ConfigurationService cs = ConfigurationService.getInstance();
         sendMessage(player, cs.getDiscordLeaveColor(), vanillaMessage.getString(), getOnline() - 1, true);
     }
 
-    private void sendMessage(ServerPlayerEntity player, int color, String title, int online, boolean quit) {
-        int max = mod.getMinecraftServer().getMaxPlayerCount();
+    private void sendMessage(ServerPlayer player, int color, String title, int online, boolean quit) {
+        int max = mod.getMinecraftServer().getMaxPlayers();
         new Thread(() -> {
             // Update bot activity
             String text = online + " online";
@@ -100,12 +100,12 @@ public class PlayerLoginCombinedListener implements ServerPlayConnectionEvents.I
 
             if (quit) {
                 // Removing the player from cache
-                mod.getPlayers().remove(player.getUuid());
+                mod.getPlayers().remove(player.getUUID());
             }
         }).start();
     }
 
     private int getOnline() {
-        return mod.getMinecraftServer().getPlayerManager().getCurrentPlayerCount();
+        return mod.getMinecraftServer().getPlayerList().getPlayerCount();
     }
 }

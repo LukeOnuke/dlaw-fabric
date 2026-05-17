@@ -15,9 +15,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.Person;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerConfigEntry;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.players.PlayerList;
+import net.minecraft.server.level.ServerLevel;
 import spark.Spark;
 
 import java.util.*;
@@ -84,13 +83,12 @@ public class RestService implements Runnable {
         Spark.get("/api/players/:uuid", (request, response) -> {
             try {
                 UUID uuid = parseUUID(request.params("uuid"));
-                if(server.getApiServices().nameToIdCache() == null) return generateError("Game server user cache unavailable!");
-                Optional<PlayerConfigEntry> user = server.getApiServices().nameToIdCache().getByUuid(uuid);
+                Optional<GameProfile> user = server.services().profileResolver().fetchById(uuid);
                 if (user.isEmpty()) {
                     response.status(404);
                     return generateError("Player not found");
                 }
-                PlayerConfigEntry player = user.get();
+                GameProfile player = user.get();
 
                 PlayerData p = PlayerData.builder()
                         .id(player.id().toString())
@@ -109,7 +107,7 @@ public class RestService implements Runnable {
                         .players(getPlayerStatus())
                         .plugins(getPluginData())
                         .world(getWorldData())
-                        .version(server.getVersion())
+                        .version(server.getServerVersion())
                         .build()));
 
         Spark.get("/api/status/players", (request, response) ->
@@ -165,17 +163,17 @@ public class RestService implements Runnable {
 
     private PlayerStatus getPlayerStatus() {
         HashSet<PlayerData> list = new HashSet<>();
-        final PlayerManager playerManager = server.getPlayerManager();
-        playerManager.getPlayerList().forEach(player -> {
+        final PlayerList playerList = server.getPlayerList();
+        playerList.getPlayers().forEach(player -> {
             list.add(PlayerData.builder()
-                    .id(player.getUuid().toString())
+                    .id(player.getUUID().toString())
                     .name(player.getName().getString())
                     .build()
             );
         });
 
         return PlayerStatus.builder()
-                .max(playerManager.getMaxPlayerCount())
+                .max(playerList.getMaxPlayers())
                 .online(list.size())
                 .list(list)
                 .build();
@@ -195,10 +193,10 @@ public class RestService implements Runnable {
     }
 
     private WorldData getWorldData() {
-        ServerWorld world = server.getOverworld();
+        ServerLevel world = server.overworld();
         return WorldData.builder()
                 .seed(String.valueOf(world.getSeed()))
-                .time(world.getTime())
+                .time(world.getGameTime())
                 .type("N/A")
                 .build();
     }

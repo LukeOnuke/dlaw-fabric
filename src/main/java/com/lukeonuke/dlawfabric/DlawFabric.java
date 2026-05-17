@@ -34,10 +34,10 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -75,7 +75,7 @@ public class DlawFabric implements ModInitializer {
         long startTime = System.nanoTime();
         LOGGER.info("Initialising dlaw-fabric...");
 
-        LOGGER.info("	Setting mod instance");
+        LOGGER.info("   Setting mod instance");
         mod = this;
         LOGGER.info("   Set!");
 
@@ -101,17 +101,16 @@ public class DlawFabric implements ModInitializer {
         try {
             sendSystemEmbed("Minecraft server service started... Please wait!");
             jda.awaitReady();
-            LOGGER.info("	Established JDA connection!");
+            LOGGER.info("   Established JDA connection!");
             SelfUser bot = jda.getSelfUser();
-            LOGGER.info("		Name: " + bot.getName());
-            LOGGER.info("		ID: " + bot.getId());
-            LOGGER.info("		Servers: " + jda.getGuilds().size());
+            LOGGER.info("      Name: " + bot.getName());
+            LOGGER.info("      ID: " + bot.getId());
+            LOGGER.info("      Servers: " + jda.getGuilds().size());
         } catch (InterruptedException e) {
             handleException(e);
         }
 
-
-        LOGGER.info("	Registering game events...");
+        LOGGER.info("   Registering game events...");
         PlayerLoginCombinedListener plcl = new PlayerLoginCombinedListener(this);
         ServerPlayConnectionEvents.INIT.register(plcl);
         ServerPlayConnectionEvents.DISCONNECT.register(plcl);
@@ -125,7 +124,7 @@ public class DlawFabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(slel);
         ServerLifecycleEvents.SERVER_STOPPED.register(slel);
 
-        LOGGER.info("	Register commands");
+        LOGGER.info("   Register commands");
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             registerCommands(
                     List.of(
@@ -137,19 +136,19 @@ public class DlawFabric implements ModInitializer {
             );
         });
 
-        LOGGER.info("	Registered game events!");
+        LOGGER.info("   Registered game events!");
 
         LOGGER.info("dlaw-fabric initialised in {}ms.", (System.nanoTime() - startTime) / 1000000L);
     }
 
     public void shutdown() {
         LOGGER.info("dlaw-fabric shutting down!");
-        LOGGER.info("	Disconnecting from discord api...");
+        LOGGER.info("   Disconnecting from discord api...");
         jda.shutdownNow();
-        LOGGER.info("	Disconnected from discord api!");
-        LOGGER.info("	Spark shutting down...");
+        LOGGER.info("   Disconnected from discord api!");
+        LOGGER.info("   Spark shutting down...");
         Spark.stop();
-        LOGGER.info("	Spark stopped...");
+        LOGGER.info("   Spark stopped...");
     }
 
     private void onServerStarted(MinecraftServer server) {
@@ -179,9 +178,9 @@ public class DlawFabric implements ModInitializer {
                 .setDescription(MarkdownUtil.bold(text)));
     }
 
-    public void sendPlayerEmbed(ServerPlayerEntity player, int color, EmbedBuilder builder) {
-        if (players.containsKey(player.getUuid())) {
-            DiscordModel model = players.get(player.getUuid());
+    public void sendPlayerEmbed(ServerPlayer player, int color, EmbedBuilder builder) {
+        if (players.containsKey(player.getUUID())) {
+            DiscordModel model = players.get(player.getUUID());
 
             sendLogEmbed(builder.setColor(color)
                     .setAuthor(model.getNickname(), null, model.getAvatar())
@@ -190,16 +189,16 @@ public class DlawFabric implements ModInitializer {
         }
     }
 
-    public void sendPlayerEmbed(ServerPlayerEntity player, EmbedBuilder builder) {
+    public void sendPlayerEmbed(ServerPlayer player, EmbedBuilder builder) {
         final ConfigurationService cs = ConfigurationService.getInstance();
         sendPlayerEmbed(player, cs.getDiscordCommandColor(), builder);
     }
 
-    public String getMinecraftAvatarUrl(ServerPlayerEntity player) {
-        return "https://visage.surgeplay.com/face/" + PluginUtils.cleanUUID(player.getUuid());
+    public String getMinecraftAvatarUrl(ServerPlayer player) {
+        return "https://visage.surgeplay.com/face/" + PluginUtils.cleanUUID(player.getUUID());
     }
 
-    public void registerCommands(List<BoltsCommand> commands, CommandDispatcher<ServerCommandSource> dispatcher) {
+    public void registerCommands(List<BoltsCommand> commands, CommandDispatcher<CommandSourceStack> dispatcher) {
         commands.forEach(command -> {
             if (command.getCommandName().isEmpty()) {
                 LOGGER.error(
@@ -208,21 +207,21 @@ public class DlawFabric implements ModInitializer {
                 return;
             }
 
-            LiteralArgumentBuilder<ServerCommandSource> builder = CommandManager.literal(command.getCommandName())
+            LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal(command.getCommandName())
                     .requires(Permissions.require(command.getRequiredPermission()));
 
-            List<RequiredArgumentBuilder<ServerCommandSource, ?>> arguments = command.getArguments();
+            List<RequiredArgumentBuilder<CommandSourceStack, ?>> arguments = command.getArguments();
             if (arguments.isEmpty()) {
                 builder = builder.executes(command);
                 DlawFabric.LOGGER.info(" -Command {} registered with no arguments.", command.getCommandName());
             } else if (arguments.size() == 1) {
-                RequiredArgumentBuilder<ServerCommandSource, ?> a = arguments.getFirst();
+                RequiredArgumentBuilder<CommandSourceStack, ?> a = arguments.getFirst();
                 builder = builder.then(a.executes(command));
                 DlawFabric.LOGGER.info(" -Command {} registered with one argument={}.", command.getCommandName(), a.getName());
             } else {
-                RequiredArgumentBuilder<ServerCommandSource, ?> builtArgument = null;
+                RequiredArgumentBuilder<CommandSourceStack, ?> builtArgument = null;
                 for (int i = arguments.size() - 1; i >= 0; i--) {
-                    RequiredArgumentBuilder<ServerCommandSource, ?> a = arguments.get(i);
+                    RequiredArgumentBuilder<CommandSourceStack, ?> a = arguments.get(i);
                     if (i == arguments.size() - 1) {
                         builtArgument = a.executes(command);
                         continue;

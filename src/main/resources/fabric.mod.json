@@ -3,20 +3,24 @@
 	"id": "dlaw-fabric",
 	"version": "${version}",
 	"name": "dlaw-fabric",
-	"description": "DLAW integration for fabric.",
+	"description": "Battle tested discord link.",
 	"authors": [
-		"lukeonuke, pequla"
+		"lukeonuke",
+		"pequla"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
-	"license": "MIT",
+	"license": "CC0-1.0",
 	"icon": "assets/dlaw-fabric/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-          "com.lukeonuke.dlawfabric.DlawFabric"
+			"com.lukeonuke.dlawfabric.DlawFabric"
+		],
+		"client": [
+			"com.lukeonuke.dlawfabric.client.DlawfabricClient"
 		]
 	},
 	"mixins": [
@@ -27,12 +31,10 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.16.14",
-		"minecraft": "~1.21.8",
-		"java": ">=21",
-		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*",
+		"fabric-permissions-api-v0": "0.7.0"
 	}
 }

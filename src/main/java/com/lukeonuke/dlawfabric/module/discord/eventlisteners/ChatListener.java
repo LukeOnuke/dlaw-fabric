@@ -11,10 +11,10 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import org.jetbrains.annotations.NotNull;
 
 @AllArgsConstructor
@@ -45,41 +45,41 @@ public class ChatListener extends ListenerAdapter implements EventListener {
         // Chat channel
         if (channel.getId().equals(cs.getDiscordChatChannelID())) {
             Message referencedMessage = message.getReferencedMessage();
-            MutableText replyText = Text.empty();
+            MutableComponent replyText = Component.empty();
             if (referencedMessage != null) {
                 String referencedMessageContent = getMessageContent(referencedMessage);
                 if (!referencedMessageContent.isBlank()) {
-                    replyText = Text.empty()
+                    replyText = Component.empty()
                             .append(
-                                    Text.literal(" Replying to ").formatted(Formatting.DARK_PURPLE)
+                                    Component.literal(" Replying to ").withStyle(ChatFormatting.DARK_PURPLE)
                             ).append(
-                                    Text.literal(referencedMessage.getAuthor().getEffectiveName()).formatted(Formatting.LIGHT_PURPLE)
+                                    Component.literal(referencedMessage.getAuthor().getEffectiveName()).withStyle(ChatFormatting.LIGHT_PURPLE)
                             ).append(
-                                    Text.literal(": ").formatted(Formatting.DARK_PURPLE)
+                                    Component.literal(": ").withStyle(ChatFormatting.DARK_PURPLE)
                             ).append(
-                                    Text.empty().formatted(Formatting.RESET)
+                                    Component.empty().withStyle(ChatFormatting.RESET)
                             ).append(
-                                    Text.literal(PluginUtils.truncateString(referencedMessageContent, 55) + "\n").formatted(Formatting.GRAY, Formatting.ITALIC)
+                                    Component.literal(PluginUtils.truncateString(referencedMessageContent, 55) + "\n").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)
                             );
                 }
             }
 
             content = content.replace("§", "&");
-            MutableText text = replyText.append(
-                    Text.literal("> ").formatted(Formatting.DARK_PURPLE).append(
-                            Text.literal(author.getEffectiveName()).formatted(Formatting.LIGHT_PURPLE).append(
-                                    Text.literal(": " + PluginUtils.truncateString(content, 256)).formatted(Formatting.WHITE)
+            MutableComponent text = replyText.append(
+                    Component.literal("> ").withStyle(ChatFormatting.DARK_PURPLE).append(
+                            Component.literal(author.getEffectiveName()).withStyle(ChatFormatting.LIGHT_PURPLE).append(
+                                    Component.literal(": " + PluginUtils.truncateString(content, 256)).withStyle(ChatFormatting.WHITE)
                             )
                     )
             );
 
             text.setStyle(
                     text.getStyle().withHoverEvent(
-                            new HoverEvent.ShowText(Text.literal("This is a message sent from discord. \nPowered by dlaw-fabric."))
+                            new HoverEvent.ShowText(Component.literal("This is a message sent from discord. \nPowered by dlaw-fabric."))
                     )
             );
 
-            mod.getMinecraftServer().getPlayerManager().broadcast(text, false);
+            mod.getMinecraftServer().getPlayerList().broadcastSystemMessage(text, false);
         }
     }
 

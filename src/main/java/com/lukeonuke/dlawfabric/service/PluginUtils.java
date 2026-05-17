@@ -10,10 +10,10 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import javax.security.auth.login.LoginException;
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class PluginUtils {
         return uuid.replace("-", "");
     }
 
-    public static String cleanName(ServerPlayerEntity player) {
+    public static String cleanName(ServerPlayer player) {
         return player.getName().getString();
     }
 
@@ -66,7 +66,7 @@ public class PluginUtils {
         return "https://visage.surgeplay.com/bust/" + cleanUUID(uuid);
     }
 
-//    public static DiscordModel authenticatePlayer(DlawFabric plugin, String uuid) throws LoginException {
+    //    public static DiscordModel authenticatePlayer(DlawFabric plugin, String uuid) throws LoginException {
 //        try {
 //            FileConfiguration config = plugin.getConfig();
 //            DataService service = DataService.getInstance();
@@ -207,15 +207,15 @@ public class PluginUtils {
      * @param text
      * @return
      */
-    public static MutableText prependPrefix(Text text){
-        return Text.empty().append(Text.literal("DLAW >> ").formatted(Formatting.BOLD, Formatting.DARK_PURPLE)).append(text);
+    public static MutableComponent prependPrefix(Component text){
+        return Component.empty().append(Component.literal("DLAW >> ").withStyle(ChatFormatting.BOLD, ChatFormatting.DARK_PURPLE)).append(text);
     }
 
-    public static MutableText formatError(String string){
-        return Text.literal(string).formatted(Formatting.RED);
+    public static MutableComponent formatError(String string){
+        return Component.literal(string).withStyle(ChatFormatting.RED);
     }
 
-    public static MutableText formatFullErrorMessage(String message){
+    public static MutableComponent formatFullErrorMessage(String message){
         return prependPrefix(formatError(message));
     }
 }

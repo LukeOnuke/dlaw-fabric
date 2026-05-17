@@ -7,12 +7,12 @@ import lombok.AllArgsConstructor;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.minecraft.network.message.MessageType;
-import net.minecraft.network.message.SentMessage;
-import net.minecraft.network.message.SignedMessage;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.OutgoingChatMessage;
+import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 @AllArgsConstructor
@@ -20,12 +20,12 @@ public class ChatMessageListener implements ServerMessageEvents.AllowChatMessage
     private final DlawFabric mod;
 
     @Override
-    public boolean allowChatMessage(@NotNull SignedMessage signedMessage, @NotNull ServerPlayerEntity sender, MessageType.@NotNull Parameters parameters) {
+    public boolean allowChatMessage(@NotNull PlayerChatMessage signedMessage, @NotNull ServerPlayer sender, ChatType.@NotNull Bound parameters) {
         final MuteService ms = MuteService.getInstance();
 
         // Check if globally muted
-        if(ms.isGloballyMuted(sender.getUuid())) {
-            sender.sendChatMessage(SentMessage.of(signedMessage), false, parameters);
+        if(ms.isGloballyMuted(sender.getUUID())) {
+            sender.sendChatMessage(OutgoingChatMessage.create(signedMessage), false, parameters);
             return false;
         }
 
@@ -34,20 +34,20 @@ public class ChatMessageListener implements ServerMessageEvents.AllowChatMessage
             final ConfigurationService cs = ConfigurationService.getInstance();
             TextChannel channel = mod.getJda().getTextChannelById(cs.getDiscordChatChannelID());
             if(channel != null){
-                channel.sendMessage(MarkdownUtil.bold(sender.getName().getString()) + " " + MarkdownUtil.monospace(signedMessage.getContent().getString())).queue();
+                channel.sendMessage(MarkdownUtil.bold(sender.getName().getString()) + " " + MarkdownUtil.monospace(signedMessage.decoratedContent().getString())).queue();
             }
         }).start();
 
         // Get all other variables
-        final Text message = signedMessage.getContent();
+        final Component message = signedMessage.decoratedContent();
         final MinecraftServer server = mod.getMinecraftServer();
         // Send message to server
-        server.sendMessage(Text.empty().append(Text.literal(sender.getName().getString() + ": ")).append(message));
+        server.sendSystemMessage(Component.empty().append(Component.literal(sender.getName().getString() + ": ")).append(message));
 
         // Handle message sending to players
-        for (ServerPlayerEntity receiver : server.getPlayerManager().getPlayerList()) {
-            if (!ms.isPersonallyMuted(sender.getUuid(), receiver.getUuid())) {
-                receiver.sendChatMessage(SentMessage.of(signedMessage), false, parameters);
+        for (ServerPlayer receiver : server.getPlayerList().getPlayers()) {
+            if (!ms.isPersonallyMuted(sender.getUUID(), receiver.getUUID())) {
+                receiver.sendChatMessage(OutgoingChatMessage.create(signedMessage), false, parameters);
             }
         }
         return false;

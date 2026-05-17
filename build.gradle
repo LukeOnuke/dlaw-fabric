@@ -1,15 +1,10 @@
 plugins {
-	id 'fabric-loom' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
-	id("com.gradleup.shadow") version "9.0.1"
 }
 
 version = project.mod_version
 group = project.maven_group
-
-base {
-	archivesName = project.archives_base_name
-}
 
 repositories {
 	// Add repositories to retrieve artifacts from in here.
@@ -31,84 +26,39 @@ loom {
 
 }
 
-configurations {
-	// Custom resolvable configuration to include only JDA and its deps
-	shadedImplementation {
-		canBeResolved = true
-		canBeConsumed = false
-		extendsFrom implementation
-	}
-}
-
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	include(modImplementation('me.lucko:fabric-permissions-api:0.4.0'))
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Lombok for compile-time annotations
-	compileOnly 'org.projectlombok:lombok:1.18.32' // Use latest version if needed
-	annotationProcessor 'org.projectlombok:lombok:1.18.32'
-
-	// JDA
 	implementation("net.dv8tion:JDA:$project.jda_version")
-
 	implementation("com.sparkjava:spark-core:2.9.4")
-
 	// https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-xml
 	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
-	// https://mvnrepository.com/artifact/org.apache.spark/spark-core
-	//include(modImplementation('me.lucko:fabric-permissions-api:0.4.0'))
-}
+	implementation('me.lucko:fabric-permissions-api:0.7.0')
 
-shadowJar {
-	configurations = [project.configurations.shadedImplementation]
-	archiveClassifier.set("dev-shadow") // temporary classifier before remap
+	compileOnly("org.projectlombok:lombok:1.18.46")
+	annotationProcessor("org.projectlombok:lombok:1.18.46")
 
-	// Relocate the entire kotlinx.datetime package
-	relocate 'kotlinx.datetime', 'com.lukeonuke.dlawfabric.libs.kotlinx.datetime'
-
-	// 3. (Optional but Recommended) Exclude Kotlin metadata
-	// This prevents "module-info" or metadata conflicts with other mods
-	exclude 'META-INF/kotlin-datetime.kotlin_module'
-	exclude 'META-INF/versions/**'
-
-	mergeServiceFiles()
-}
-
-tasks {
-	// Ensure shadowJar task uses the right configuration and settings
-	shadowJar {
-		// configurations are set by the shadow plugin block above
-	}
-
-	// Loom remapJar task remaps the shaded jar and produces the final output
-	remapJar {
-		dependsOn shadowJar
-		inputFile.set(shadowJar.archiveFile)
-		archiveClassifier.set("") // final jar with no classifier
-	}
-
-	// Disable normal jar, you want to use the remapped shadow jar only
-	jar {
-		enabled = false
-	}
+	testCompileOnly("org.projectlombok:lombok:1.18.46")
+	testAnnotationProcessor("org.projectlombok:lombok:1.18.46")
 }
 
 processResources {
-	inputs.property "version", project.version
+	def version = project.version
+	inputs.property "version", version
 
 	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+		expand "version": version
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 25
 }
 
 java {
@@ -117,15 +67,16 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
-	inputs.property "archivesName", project.base.archivesName
+	def projectName = project.name
+	inputs.property "projectName", projectName
 
 	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
+		rename { "${it}_$projectName"}
 	}
 }
 
@@ -133,7 +84,6 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
 			from components.java
 		}
 	}

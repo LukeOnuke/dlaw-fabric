@@ -14,7 +14,7 @@ public class SeedCommand implements SlashCommand {
             event.getHook().sendMessage("Minecraft server hasn't loaded yet.").queue();
             return;
         }
-        String seed = String.valueOf(mod.getMinecraftServer().getOverworld().getSeed());
+        String seed = String.valueOf(mod.getMinecraftServer().overworld().getSeed());
         event.getHook().sendMessage("Seed: " + MarkdownUtil.bold(seed)).queue();
     }
 
