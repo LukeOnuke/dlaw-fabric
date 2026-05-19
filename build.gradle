@@ -1,6 +1,7 @@
 plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
+	id("com.gradleup.shadow") version "9.4.1"
 }
 
 version = project.mod_version
@@ -26,6 +27,18 @@ loom {
 
 }
 
+configurations {
+	// Custom resolvable configuration to include only JDA and its deps
+	shadedImplementation {
+		canBeResolved = true
+		canBeConsumed = false
+	}
+
+	// Tell gradle that everything marked shadedImplementation should
+	// be available in IDE too.
+	implementation.extendsFrom(shadedImplementation)
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -35,10 +48,10 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	implementation("net.dv8tion:JDA:$project.jda_version")
-	implementation("com.sparkjava:spark-core:2.9.4")
+	shadedImplementation("net.dv8tion:JDA:$project.jda_version")
+	shadedImplementation("com.sparkjava:spark-core:2.9.4")
 	// https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-xml
-	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
+	shadedImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
 	implementation('me.lucko:fabric-permissions-api:0.7.0')
 
 	compileOnly("org.projectlombok:lombok:1.18.46")
@@ -47,6 +60,22 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok:1.18.46")
 	testAnnotationProcessor("org.projectlombok:lombok:1.18.46")
 }
+
+shadowJar {
+	configurations = [project.configurations.shadedImplementation]
+	archiveClassifier.set("") // temporary classifier before remap
+
+	// Relocate the entire kotlinx.datetime package
+	relocate 'kotlinx.datetime', 'com.lukeonuke.dlawfabric.libs.kotlinx.datetime'
+
+	// 3. (Optional but Recommended) Exclude Kotlin metadata
+	// This prevents "module-info" or metadata conflicts with other mods
+	exclude 'META-INF/kotlin-datetime.kotlin_module'
+	exclude 'META-INF/versions/**'
+
+	mergeServiceFiles()
+}
+
 
 processResources {
 	def version = project.version
